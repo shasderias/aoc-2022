@@ -95,9 +95,14 @@ func star1() error {
 }
 
 func star2() error {
-	const gridHeight = 100000
+	const (
+		gridHeight       = 1000000
+		minPeriodGuess   = 10
+		maxPeriodGuess   = 10000
+		repeatConfidence = 10
+	)
 
-	input, err := readInput("input-example.txt")
+	input, err := readInput("input.txt")
 	if err != nil {
 		return err
 	}
@@ -107,10 +112,10 @@ func star2() error {
 	nextInput := makeIterator(input)
 	nextBlock := makeIterator(Shapes)
 
-	//multiple := len(input) * len(Shapes)
 	dropHeightCount := make([]int, gridHeight)
-	//dropHeightCountMap := make(map[int]int)
-	//acc := 0
+
+	var found bool
+	var adjust int
 
 	for blocksSpawned := 0; blocksSpawned < Star2MaxBlocks; blocksSpawned++ {
 		var (
@@ -128,65 +133,36 @@ func star2() error {
 
 		g.AddSpawned(activeBlock)
 
-		//if gridHeight-g.HighestY() < 1000 {
-		//	acc += g.Consolidate()
-		//}
+		if !found {
+			dropHeightCount[blocksSpawned] = g.HighestY()
+		}
 
-		//if blocksSpawned%multiple-1 == 0 {
-		//	dropHeightCountMap[blocksSpawned] = g.HighestY() + acc
-		//	if periodFound(dropHeightCountMap) {
-		//		fmt.Println(blocksSpawned)
-		//		break
-		//	}
-		//
-		//}
-		//
-		dropHeightCount[blocksSpawned] = g.HighestY()
-
-		maxPeriodGuess := min(40, blocksSpawned/2)
-		if blocksSpawned > 3000 {
-			for i := 3; i < maxPeriodGuess; i++ {
-				periodDiff := dropHeightCount[blocksSpawned] - dropHeightCount[blocksSpawned-i]
-				repeats := 0
-				for ; blocksSpawned > repeats*i; repeats++ {
-					if dropHeightCount[blocksSpawned-repeats*i] != dropHeightCount[blocksSpawned-(repeats+1)*i]+periodDiff {
-						break
-					}
-					if repeats > 10 {
-						fmt.Println("found", i, blocksSpawned, repeats)
-						break
-					}
+		for periodGuess := minPeriodGuess; periodGuess < maxPeriodGuess; periodGuess++ {
+			if found || blocksSpawned-periodGuess < 0 {
+				break
+			}
+			diff := dropHeightCount[blocksSpawned] - dropHeightCount[blocksSpawned-periodGuess]
+			for repeats := 0; blocksSpawned > (repeats+1)*periodGuess; repeats++ {
+				if dropHeightCount[blocksSpawned-repeats*periodGuess] != dropHeightCount[blocksSpawned-(repeats+1)*periodGuess]+diff {
+					break
+				}
+				if repeats > repeatConfidence {
+					found = true
+					toGoal := Star2MaxBlocks - blocksSpawned
+					periodsToGoal := toGoal / periodGuess
+					blocksSpawned += periodsToGoal * periodGuess
+					adjust = periodsToGoal * diff
+					fmt.Println("found period", periodGuess, diff)
+					goto periodFound
 				}
 			}
 		}
-
-		//
-		//if dropHeightCount[blocksSpawned] == dropHeightCount[blocksSpawned/2]/2 {
-		//	fmt.Println("period at", blocksSpawned, " - ", g.HighestY())
-		//}
-		//
-		//if g.Period() {
-		//	fmt.Println("period at", blocksSpawned, " - ", g.HighestY())
-		//}
-		//if period := g.Period2(); period != -1 {
-		//	fmt.Println("period found", period)
-		//	return nil
-		//}
+	periodFound:
 	}
-	//fmt.Println(acc)
-	fmt.Println(g.HighestY())
+
+	fmt.Println(g.HighestY() + adjust)
 
 	return nil
-}
-
-func periodFound(countMap map[int]int) bool {
-	for blocksDropped, height := range countMap {
-		if doubleHeight, ok := countMap[blocksDropped*2]; ok && doubleHeight == height*2 {
-			return true
-		}
-	}
-	return false
-
 }
 
 func readInput(filename string) ([]grid.Point, error) {
@@ -210,11 +186,4 @@ func readInput(filename string) ([]grid.Point, error) {
 	}
 
 	return dirs, nil
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
