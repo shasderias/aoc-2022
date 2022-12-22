@@ -35,16 +35,14 @@ func star1(inputPath string) {
 			}
 		case instTypeTurn:
 			switch in.turn {
-			case dirCW:
-				curDir = curDir.RotateCW()
-			case dirCCW:
-				curDir = curDir.RotateCCW()
+			case instDirR:
+				curDir = curDir.Rotate(grid.RotateCW)
+			case instDirL:
+				curDir = curDir.Rotate(grid.RotateCCW)
 			}
 		}
 	}
 
-	fmt.Println(maze.FindStart())
-	fmt.Println(curCoord, curDir)
 	fmt.Println((curCoord.X+1)*4 + (curCoord.Y+1)*1000 + curDir.PasswordValue())
 }
 
@@ -57,38 +55,38 @@ func star2(inputPath string) {
 	edgePairs := []grid.EdgePair{
 		grid.NewEdgePair( // 1N - 6W
 			"1N - 6W",
-			grid.Point{50, -1}, grid.Point{99, -1},
-			grid.Point{-1, 150}, grid.Point{-1, 199},
+			grid.Vec{50, -1}, grid.Vec{99, -1},
+			grid.Vec{-1, 150}, grid.Vec{-1, 199},
 			grid.RotateCW),
 		grid.NewEdgePair( // 2N to 6S
 			"2N - 6S",
-			grid.Point{100, -1}, grid.Point{149, -1},
-			grid.Point{0, 200}, grid.Point{49, 200},
+			grid.Vec{100, -1}, grid.Vec{149, -1},
+			grid.Vec{0, 200}, grid.Vec{49, 200},
 			grid.RotateNil),
 		grid.NewEdgePair( //1W to 4W
 			"1W - 4W",
-			grid.Point{49, 0}, grid.Point{49, 49},
-			grid.Point{-1, 149}, grid.Point{-1, 100},
+			grid.Vec{49, 0}, grid.Vec{49, 49},
+			grid.Vec{-1, 149}, grid.Vec{-1, 100},
 			grid.Rotate180),
 		grid.NewEdgePair( // 2E to 5E
 			"2E - 5E",
-			grid.Point{150, 0}, grid.Point{150, 49},
-			grid.Point{100, 149}, grid.Point{100, 100},
+			grid.Vec{150, 0}, grid.Vec{150, 49},
+			grid.Vec{100, 149}, grid.Vec{100, 100},
 			grid.Rotate180),
 		grid.NewEdgePair( // 3W to 4N
 			"3W - 4N",
-			grid.Point{49, 50}, grid.Point{49, 99},
-			grid.Point{0, 99}, grid.Point{49, 99},
+			grid.Vec{49, 50}, grid.Vec{49, 99},
+			grid.Vec{0, 99}, grid.Vec{49, 99},
 			grid.RotateCCW),
 		grid.NewEdgePair( // 3E to 2S
 			"3E - 2S",
-			grid.Point{100, 50}, grid.Point{100, 99},
-			grid.Point{100, 50}, grid.Point{149, 50},
+			grid.Vec{100, 50}, grid.Vec{100, 99},
+			grid.Vec{100, 50}, grid.Vec{149, 50},
 			grid.RotateCCW),
 		grid.NewEdgePair( // 5S to 6E
 			"5S - 6E",
-			grid.Point{50, 150}, grid.Point{99, 150},
-			grid.Point{50, 150}, grid.Point{50, 199},
+			grid.Vec{50, 150}, grid.Vec{99, 150},
+			grid.Vec{50, 150}, grid.Vec{50, 199},
 			grid.RotateCW),
 	}
 
@@ -113,23 +111,22 @@ func star2(inputPath string) {
 			}
 		case instTypeTurn:
 			switch in.turn {
-			case dirCW:
-				curDir = curDir.RotateCW()
-			case dirCCW:
-				curDir = curDir.RotateCCW()
+			case instDirR:
+				curDir = curDir.Rotate(grid.RotateCW)
+			case instDirL:
+				curDir = curDir.Rotate(grid.RotateCCW)
 			}
 		}
 	}
 
-	fmt.Println(curCoord, curDir)
 	fmt.Println((curCoord.X+1)*4 + (curCoord.Y+1)*1000 + curDir.PasswordValue())
 }
 
-type dir string
+type instDir string
 
 const (
-	dirCW  = "R"
-	dirCCW = "L"
+	instDirR = "R"
+	instDirL = "L"
 )
 
 type instType byte
@@ -141,7 +138,7 @@ const (
 
 type inst struct {
 	move int
-	turn dir
+	turn instDir
 }
 
 func (i inst) Type() instType {
@@ -188,9 +185,9 @@ func parseInput(inputPath string) (*grid.Grid, []inst, error) {
 		for x, c := range line {
 			switch c {
 			case '#':
-				maze.Set(grid.Point{x, y}, grid.TileWall)
+				maze.Set(grid.Vec{x, y}, grid.TileWall)
 			case '.':
-				maze.Set(grid.Point{x, y}, grid.TileFloor)
+				maze.Set(grid.Vec{x, y}, grid.TileFloor)
 			case ' ':
 				// do nothing
 			default:
@@ -225,7 +222,7 @@ func parseInst(line string) ([]inst, error) {
 					move: steps,
 				})
 				insts = append(insts, inst{
-					turn: dir(c),
+					turn: instDir(c),
 				})
 				buf = ""
 			}
